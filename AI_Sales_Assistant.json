@@ -1,0 +1,484 @@
+{
+  "name": "AI_Sales_Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "path": "6958c39b-e679-4d81-9b88-620fc9dce553",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ],
+      "id": "78fbf4fa-ff51-4b53-98bb-90542c6828bd",
+      "name": "Webhook",
+      "webhookId": "6958c39b-e679-4d81-9b88-620fc9dce553"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e91e1d6f-2d08-4e1f-9cc8-5124f1ba83b5",
+              "leftValue": "={{ $json.query['hub.mode'] }}",
+              "rightValue": "subscribe",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "37787b93-9459-4318-b0da-a7344f3d672e",
+              "leftValue": "={{ $json.query['hub.verify_token'] }}",
+              "rightValue": "={{ $env['FB_VERIFY_TOKEN'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        304,
+        -192
+      ],
+      "id": "244e71ca-feb7-4e46-8493-909ff20ad36a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres un asistente especializado en máquinas de coser JACK. La información sobre los modelos disponibles, su descripción, precio y existencia está en una tabla de Google Sheets.\n\nTu objetivo es:\n\n1. Responder dudas o solicitudes de recomendación con base en la hoja.\n2. Si un modelo es mencionado, confirma si está disponible y cuál es su descripción y precio. (si el modelo tiene precio, mandalo en negritas)\n3. Si el usuario pregunta cuál máquina le conviene, recomienda un modelo según sus características.\n4. Si el usuario pide una cotización con envío, NO des un precio. En lugar de eso, responde:\n\n\"Para cotizaciones con envío, por favor contacta directamente al dueño por WhatsApp:  \n{{ $env['SALES_CONTACT'] }}\n\nNo inventes información que no esté en la hoja. Si el modelo no existe, dilo con claridad.\n\nMensaje del cliente:\n{{ $('Webhook').item.json.body.entry[0].messaging[0].message.text }}",
+        "needsFallback": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        872,
+        0
+      ],
+      "id": "14dbfd30-2597-442e-9a9b-5431e6660b47",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        224
+      ],
+      "id": "b18ad516-a470-4fa8-9707-d33f948548fa",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "PBe9Kftaiki91opt",
+          "name": "Chatbot_LaAgujita"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        224
+      ],
+      "id": "715729c0-e763-46eb-9492-1053c126c18b",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "PBe9Kftaiki91opt",
+          "name": "Chatbot_LaAgujita"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{$('Webhook').item.json.body.entry[0].messaging[0].sender.id}}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1040,
+        224
+      ],
+      "id": "b0e23ada-685c-4b3e-8e4c-74e4609bf1da",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "Text"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        528,
+        -192
+      ],
+      "id": "e996d9ef-0ca3-4f79-9bbd-0ed123649d89",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "daf8f921-c242-4b10-ae31-4d02abf4d125",
+              "leftValue": "={{$json[\"body\"][\"entry\"][0][\"messaging\"][0][\"message\"][\"text\"]}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "40c8f679-742d-40ae-9e50-598aac42b437",
+              "leftValue": "={{$json[\"body\"][\"entry\"][0][\"messaging\"][0][\"sender\"][\"id\"]}}",
+              "rightValue": "={{ $env['FB_BLOCKED_SENDER_ID'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        304,
+        96
+      ],
+      "id": "99e34c93-ba0c-4741-b870-799501fd22d8",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        528,
+        0
+      ],
+      "id": "51804029-a1d4-4b39-a25f-b824db276ef4",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        528,
+        192
+      ],
+      "id": "698f021d-a2dd-45df-b2fb-b4162d5df8e6",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b25aac26-6237-4619-b0e6-3ef392f8a742",
+              "name": "messaging_type",
+              "value": "RESPONSE",
+              "type": "string"
+            },
+            {
+              "id": "6c71e70d-e9de-4d2b-8485-b0aaa2ef5d64",
+              "name": "message.text",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "adf93675-7e7a-458f-b9b4-16028a249395",
+              "name": "recipient.id",
+              "value": "={{ $('Webhook').item.json.body.entry[0].messaging[0].sender.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        0
+      ],
+      "id": "6e117496-5659-4d31-9f65-ee1f3b49879e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v23.0/me/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "=application/json",
+        "body": "={{ JSON.stringify({\n  messaging_type: $json.messaging_type ?? \"RESPONSE\",\n  recipient: { id: $json.recipient.id },\n  message: { text: $json.message.text.slice(0, 630) }\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1568,
+        0
+      ],
+      "id": "b6ebe78d-aa02-4fde-80c6-6d81f2e846a0",
+      "name": "HTTP Request1",
+      "alwaysOutputData": false,
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "REiP8h0sbmK5zEAo",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "=Eres un asistente especializado en máquinas de coser JACK. La información sobre los modelos disponibles, su descripción, precio y existencia está en una tabla de Google Sheets.\n\nTu objetivo es:\n\n1. Responder dudas o solicitudes de recomendación con base en la hoja.\n2. Si un modelo es mencionado, confirma si está disponible y cuál es su descripción y precio.\n3. Si el usuario pregunta cuál máquina le conviene, recomienda un modelo según sus características.\n4. Si el usuario pide una cotización con envío, NO des un precio. En lugar de eso, responde:\n\n\"Para cotizaciones con envío, por favor contacta directamente al dueño por WhatsApp:  \n{{ $env['SALES_CONTACT'] }}\n\nNo inventes información que no esté en la hoja. Si el modelo no existe, dilo con claridad.\n",
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env['GSHEET_ID'] }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $env['GSHEET_SHEET_NAME'] }}",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        1184,
+        224
+      ],
+      "id": "e22cb1b0-7a31-40af-be80-2f7534cd5b99",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleApi": {
+          "id": "09XiyLTXPJFqfHzX",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        []
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c920c7eb-0054-4b66-a3e7-4ea1892cffb8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2e0cad8fe68a173a720dd4ef88cef8c570c2707f464ff90b131bd628b3cb75f8"
+  },
+  "id": "vAjoANq3nyyti3Tv",
+  "tags": []
+}
